@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Заметки пользователя {{ user.username }} - Админка</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .note-card {
+            border-left: 4px solid #0d6efd;
+            transition: all 0.3s;
+        }
+        .note-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">Главная</a></li>
+            <li class="breadcrumb-item"><a href="/admin/users">Админка</a></li>
+            <li class="breadcrumb-item"><a href="/admin/all-notes">Все заметки</a></li>
+            <li class="breadcrumb-item active">{{ user.username }}</li>
+        </ol>
+    </nav>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center bg-light">
+            <div>
+                <h4 class="mb-0">📝 Заметки пользователя: <strong>{{ user.username }}</strong></h4>
+                <p class="mb-0 text-muted">Email: {{ user.email }} | ID: {{ user.id }}</p>
+            </div>
+            <div class="text-end">
+                {% if user.is_admin %}
+                <span class="badge bg-danger fs-6">👑 Администратор</span>
+                {% else %}
+                <span class="badge bg-secondary fs-6">👤 Пользователь</span>
+                {% endif %}
+                <div class="mt-1">
+                    <span class="badge bg-primary fs-6">{{ notes_count }} заметок</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">📋 Информация о пользователе</h5>
+                            <ul class="list-unstyled">
+                                <li><strong>Имя пользователя:</strong> {{ user.username }}</li>
+                                <li><strong>Email:</strong> {{ user.email }}</li>
+                                <li><strong>ID:</strong> {{ user.id }}</li>
+                                <li><strong>Зарегистрирован:</strong> {{ user.created_at.strftime('%d.%m.%Y %H:%M') }}</li>
+                                <li><strong>Статус:</strong> {% if user.is_admin %}Администратор{% else %}Обычный пользователь{% endif %}</li>
+                            </ul>
+
+                            <div class="mt-3">
+                                {% if not user.is_admin %}
+                                <form action="{{ url_for('toggle_admin', user_id=user.id) }}" method="POST"
+                                      onsubmit="return confirm('Назначить пользователя {{ user.username }} администратором?');"
+                                      class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-warning">
+                                        👑 Сделать админом
+                                    </button>
+                                </form>
+                                {% else %}
+                                <form action="{{ url_for('toggle_admin', user_id=user.id) }}" method="POST"
+                                      onsubmit="return confirm('Снять пользователя {{ user.username }} с администратора?');"
+                                      class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                        👤 Снять с админа
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h5 class="mb-3">Все заметки пользователя:</h5>
+
+            {% if notes %}
+            <div class="row">
+                {% for note in notes %}
+                <div class="col-md-6 mb-3">
+                    <div class="card note-card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">{{ note.title }}</h5>
+                            <small class="text-muted">{{ note.created_at.strftime('%d.%m.%Y') }}</small>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">{{ note.content[:150] }}{% if note.content|length > 150 %}...{% endif %}</p>
+
+                            {% if note.tags %}
+                            <div class="mb-2">
+                                <strong>Теги:</strong>
+                                {% for tag in note.tags.split(',') %}
+                                    <span class="badge bg-info me-1">{{ tag.strip() }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+
+                            <div class="text-muted small">
+                                <div><strong>Создано:</strong> {{ note.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
+                                <div><strong>Обновлено:</strong> {{ note.updated_at.strftime('%d.%m.%Y %H:%M') }}</div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="{{ url_for('view_note', note_id=note.id) }}"
+                                   class="btn btn-sm btn-outline-primary" target="_blank">
+                                    👁️ Просмотреть
+                                </a>
+
+                                <div class="btn-group">
+                                    <a href="{{ url_for('edit_note', note_id=note.id) }}"
+                                       class="btn btn-sm btn-outline-warning" target="_blank">
+                                        ✏️ Редактировать
+                                    </a>
+
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#deleteNoteModal{{ note.id }}">
+                                        🗑️ Удалить
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Модальное окно удаления заметки -->
+                <div class="modal fade" id="deleteNoteModal{{ note.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Удаление заметки</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-danger">
+                                    <h6>⚠️ Вы уверены что хотите удалить заметку?</h6>
+                                    <p><strong>{{ note.title }}</strong></p>
+                                    <p>Автор: {{ user.username }}</p>
+                                    <p>Создана: {{ note.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
+                                    <p class="mt-2"><strong>Эта операция необратима!</strong></p>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                <form action="{{ url_for('admin_delete_note', note_id=note.id) }}" method="POST">
+                                    <button type="submit" class="btn btn-danger">Да, удалить</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <h5>📭 Заметок нет</h5>
+                <p class="mb-0">У пользователя <strong>{{ user.username }}</strong> пока нет созданных заметок.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="card-footer">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <a href="/admin/all-notes" class="btn btn-secondary">← Все заметки</a>
+                    <a href="/admin/users" class="btn btn-primary">👥 К пользователям</a>
+                </div>
+                <div>
+                    <a href="/" class="btn btn-outline-secondary">🏠 На главную</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Автоматическое закрытие alert через 5 секунд
+        setTimeout(function() {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                var bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+    </script>
+</body>
+</html>

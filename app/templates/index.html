@@ -52,6 +52,24 @@
                                 <i class="bi bi-journal-plus"></i> Мои заметки
                             </a>
                         </li>
+                        {% if current_user.is_admin %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-shield-check"></i> Админка
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{{ url_for('admin_users') }}">
+                                    <i class="bi bi-people-fill"></i> Управление пользователями
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('admin_all_notes') }}">
+                                    <i class="bi bi-journals"></i> Все заметки
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('admin_dashboard') }}">
+                                    <i class="bi bi-graph-up"></i> Статистика
+                                </a></li>
+                            </ul>
+                        </li>
+                        {% endif %}
                         {% endif %}
                     </ul>
 
@@ -64,12 +82,20 @@
                                 </span>
                                 <span class="welcome-text">
                                     Привет, {{ current_user.username }}!
+                                    {% if current_user.is_admin %}
+                                    <span class="badge bg-danger ms-1">Admin</span>
+                                    {% endif %}
                                 </span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="{{ url_for('profile') }}">
                                     <i class="bi bi-person me-2"></i>Профиль
                                 </a></li>
+                                {% if current_user.is_admin %}
+                                <li><a class="dropdown-item" href="{{ url_for('admin_dashboard') }}">
+                                    <i class="bi bi-shield-check me-2"></i>Админ-панель
+                                </a></li>
+                                {% endif %}
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{{ url_for('logout') }}">
                                     <i class="bi bi-box-arrow-right me-2"></i>Выйти
@@ -134,6 +160,9 @@
                                     {% if current_user.is_authenticated and current_user.id == user.id %}
                                     <span class="badge bg-info ms-2">Это вы!</span>
                                     {% endif %}
+                                    {% if user.is_admin %}
+                                    <span class="badge bg-danger ms-1">Admin</span>
+                                    {% endif %}
                                 </td>
                                 <td>{{ user.email }}</td>
                                 <td>
@@ -142,10 +171,26 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <a href="{{ url_for('user_notes', user_id=user.id) }}"
-                                       class="btn btn-sm btn-outline-info">
-                                        <i class="bi bi-journal-text"></i> Заметки
-                                    </a>
+                                    {% if current_user.is_authenticated %}
+                                        {% if current_user.id == user.id or current_user.is_admin %}
+                                            <a href="{{ url_for('user_notes', user_id=user.id) }}"
+                                               class="btn btn-sm btn-outline-info"
+                                               title="Просмотреть заметки">
+                                                <i class="bi bi-journal-text"></i> Заметки
+                                            </a>
+                                        {% else %}
+                                            <button class="btn btn-sm btn-outline-secondary" disabled
+                                                    title="Можно просматривать только свои заметки">
+                                                <i class="bi bi-eye-slash"></i> Заметки
+                                            </button>
+                                        {% endif %}
+                                    {% else %}
+                                        <a href="{{ url_for('login') }}"
+                                           class="btn btn-sm btn-outline-warning"
+                                           title="Войдите чтобы просматривать заметки">
+                                            <i class="bi bi-lock"></i> Заметки
+                                        </a>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% endfor %}
@@ -206,9 +251,19 @@
                             <a href="/notes/search" class="btn btn-outline-danger">
                                 <i class="bi bi-search"></i> Поиск по тегам
                             </a>
+                            {% if current_user.is_admin %}
+                            <a href="{{ url_for('admin_users') }}" class="btn btn-outline-danger">
+                                <i class="bi bi-shield-check"></i> Админка
+                            </a>
+                            {% endif %}
                         </div>
                         <small class="text-muted d-block mt-2">
-                            <i class="bi bi-info-circle"></i> Все функции доступны
+                            <i class="bi bi-info-circle"></i>
+                            {% if current_user.is_admin %}
+                            Вы администратор. Доступны все функции.
+                            {% else %}
+                            Вы можете работать только со своими заметками.
+                            {% endif %}
                         </small>
                     </div>
                     {% else %}
@@ -220,6 +275,7 @@
                                 <li>Создавать и редактировать заметки</li>
                                 <li>Искать по тегам и ключевым словам</li>
                                 <li>Сохранять заметки в личном кабинете</li>
+                                <li>Просматривать свои заметки</li>
                             </ul>
                         </div>
                         <div class="d-flex gap-2">
@@ -246,17 +302,31 @@
                     <p class="mb-1"><i class="bi bi-server"></i> Flask приложение</p>
                 </div>
                 <div class="col-md-4">
-                    <p class="mb-1"><i class="bi bi-people"></i> Командный проект</p>
+                    <p class="mb-1">
+                        <i class="bi bi-people"></i>
+                        {% if current_user.is_authenticated %}
+                            {{ current_user.username }}
+                            {% if current_user.is_admin %}(Admin){% endif %}
+                        {% else %}
+                            Гость
+                        {% endif %}
+                    </p>
                 </div>
             </div>
             <hr class="my-2">
             <p class="small">
-                Всего запросов в БД: {{ users|length }} |
+                Всего пользователей: {{ users|length }} |
                 <a href="{{ url_for('test_db') }}" class="text-decoration-none">Подробная статистика</a> |
                 {% if current_user.is_authenticated %}
-                <span class="text-success">
-                    <i class="bi bi-shield-check"></i> Вы авторизованы
-                </span>
+                    {% if current_user.is_admin %}
+                    <span class="text-danger">
+                        <i class="bi bi-shield-check"></i> Администратор
+                    </span>
+                    {% else %}
+                    <span class="text-success">
+                        <i class="bi bi-shield-check"></i> Авторизован
+                    </span>
+                    {% endif %}
                 {% else %}
                 <span class="text-warning">
                     <i class="bi bi-shield-exclamation"></i> Гостевой режим
