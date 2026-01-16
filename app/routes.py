@@ -6,17 +6,11 @@ from app.models import User, Note
 def init_routes(app):
     @app.route('/')
     def index():
-        # Получаем всех пользователей и количество их заметок
+        # Временная заглушка
+        return "Приложение работает! <a href='/users'>Перейти к пользователям</a>"
+
+    @app.route('/users')
+    def users():
+        # Просто показываем, что есть в базе
         users = User.query.all()
-        user_stats = []
-
-        for user in users:
-            notes_count = Note.query.filter_by(user_id=user.id).count()
-            user_stats.append({
-                'id': user.id,
-                'username': user.username,
-                'email': user.email,
-                'notes_count': notes_count
-            })
-
-        return render_template('index.html', users=user_stats)
+        return f"Пользователей в базе: {len(users)}"
