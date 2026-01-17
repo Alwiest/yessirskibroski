@@ -99,7 +99,7 @@ def init_routes(app):
     @login_required
     def profile():
         notes_count = Note.query.filter_by(user_id=current_user.id).count()
-        return render_template('profile.html', user=current_user, notes_count=notes_count)
+        return render_template('auth/profile.html', user=current_user, notes_count=notes_count)
 
     @app.route('/notes')
     @login_required
