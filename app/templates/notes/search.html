@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Поиск</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-4">
+    <h1>Поиск заметок</h1>
+    <a href="/notes" class="btn btn-secondary mb-3">Назад</a>
+
+    <form method="GET" action="/notes/search" class="mb-4">
+        <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Поиск...">
+        <button type="submit" class="btn btn-primary mt-2">Найти</button>
+    </form>
+
+    {% if query %}
+        {% if notes %}
+        <p>Найдено: {{ notes_count }}</p>
+        <ul class="list-group">
+            {% for note in notes %}
+            <li class="list-group-item">
+                <a href="/notes/{{ note.id }}">{{ note.title }}</a>
+                <p>{{ note.content[:100] }}...</p>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>Ничего не найдено</p>
+        {% endif %}
+    {% endif %}
+</div>
+</body>
+</html>

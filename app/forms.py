@@ -36,3 +36,17 @@ class LoginForm(FlaskForm):
     password = PasswordField('Пароль',
                              validators=[DataRequired()])
     submit = SubmitField('Войти')
+
+
+class NoteForm(FlaskForm):
+    title = StringField('Заголовок', validators=[
+        DataRequired(message='Заголовок обязателен'),
+        Length(max=100, message='Максимум 100 символов')
+    ])
+    content = TextAreaField('Текст заметки', validators=[
+        DataRequired(message='Текст заметки обязателен')
+    ])
+    tags = StringField('Теги (через запятую)', validators=[
+        Length(max=200, message='Максимум 200 символов')
+    ])
+    submit = SubmitField('Сохранить')
