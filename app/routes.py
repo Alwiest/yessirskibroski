@@ -36,9 +36,20 @@ def init_routes(app):
                                recent_notes=recent_notes)
 
     @app.route('/user/<int:user_id>/notes')
+    @login_required
     def user_notes(user_id):
+        """Просмотр заметок пользователя (только свои или админ)"""
         user = User.query.get_or_404(user_id)
+
+        # Проверяем права доступа:
+        # 1. Пользователь смотрит свои заметки
+        # 2. Или это админ
+        if current_user.id != user.id and not current_user.is_admin:
+            flash('Вы можете просматривать только свои заметки', 'danger')
+            return redirect(url_for('notes_list'))
+
         notes = Note.query.filter_by(user_id=user_id).order_by(Note.created_at.desc()).all()
+
         return render_template('user_notes.html',
                                user=user,
                                notes=notes,
@@ -60,7 +71,7 @@ def init_routes(app):
             db.session.commit()
             flash('Регистрация успешна!', 'success')
             return redirect(url_for('login'))
-        return render_template('register.html', form=form)
+        return render_template('auth/register.html', form=form)  # ← ИЗМЕНИЛ
 
     @app.route('/login', methods=['GET', 'POST'])
     def login():
@@ -75,7 +86,7 @@ def init_routes(app):
                 return redirect(url_for('index'))
             else:
                 flash('Неверное имя пользователя или пароль', 'danger')
-        return render_template('login.html', form=form)
+        return render_template('auth/login.html', form=form)  # ← ИЗМЕНИЛ
 
     @app.route('/logout')
     @login_required
@@ -165,3 +176,153 @@ def init_routes(app):
         else:
             notes = []
         return render_template('notes/search.html', notes=notes, query=query, notes_count=len(notes))
+
+    @app.route('/admin/users')
+    def admin_users():
+        """Список всех пользователей для админа"""
+        from app.models import User
+
+        # Проверка что пользователь админ (пока заглушка)
+        # Позже добавим реальную проверку через flask-login
+        is_admin = True  # временно
+
+        if not is_admin:
+            return "Доступ запрещен. Требуются права администратора.", 403
+
+        users = User.query.all()
+        return render_template('admin_users.html', users=users)
+
+
+    @app.route('/admin/dashboard')
+    def admin_dashboard():
+        """Админская панель управления"""
+        from app.models import User, Note
+
+        # Проверка прав (позже через flask-login)
+        is_admin = True  # временно
+
+        if not is_admin:
+            return "Доступ запрещен", 403
+
+        stats = {
+            'total_users': User.query.count(),
+            'total_notes': Note.query.count(),
+            'admin_users': User.query.filter_by(is_admin=True).count(),
+            'recent_notes': Note.query.order_by(Note.created_at.desc()).limit(5).all()
+        }
+
+        return render_template('admin_dashboard.html', stats=stats)
+
+
+    @app.route('/admin/all-notes')
+    @login_required
+    def admin_all_notes():
+        """Просмотр всех заметок в системе (для админа)"""
+        if not current_user.is_admin:
+            flash('Доступ запрещен. Требуются права администратора.', 'danger')
+            return redirect(url_for('index'))
+
+        notes = Note.query.order_by(Note.created_at.desc()).all()
+
+        # Добавляем информацию о пользователях
+        notes_with_users = []
+        for note in notes:
+            user = User.query.get(note.user_id)
+            notes_with_users.append({
+                'note': note,
+                'user': user
+            })
+
+        return render_template('admin_all_notes.html',
+                               notes_with_users=notes_with_users,
+                               notes_count=len(notes))
+
+    @app.route('/admin/note/<int:note_id>/delete', methods=['POST'])
+    @login_required
+    def admin_delete_note(note_id):
+        """Удаление любой заметки (для админа)"""
+        if not current_user.is_admin:
+            flash('Доступ запрещен. Требуются права администратора.', 'danger')
+            return redirect(url_for('index'))
+
+        note = Note.query.get_or_404(note_id)
+        note_title = note.title
+        user = User.query.get(note.user_id)
+
+        db.session.delete(note)
+        db.session.commit()
+
+        flash(f'Заметка "{note_title}" пользователя {user.username} удалена', 'success')
+        return redirect(url_for('admin_all_notes'))
+
+    @app.route('/admin/user/<int:user_id>/notes')
+    @login_required
+    def admin_user_notes(user_id):
+        """Просмотр всех заметок конкретного пользователя (для админа)"""
+        if not current_user.is_admin:
+            flash('Доступ запрещен. Требуются права администратора.', 'danger')
+            return redirect(url_for('index'))
+
+        user = User.query.get_or_404(user_id)
+        notes = Note.query.filter_by(user_id=user_id).order_by(Note.created_at.desc()).all()
+
+        return render_template('admin_user_notes.html',
+                               user=user,
+                               notes=notes,
+                               notes_count=len(notes))
+
+    @app.route('/admin/user/<int:user_id>/toggle-admin', methods=['POST'])
+    @login_required
+    def toggle_admin(user_id):
+        """Включить/выключить права админа для пользователя"""
+        if not current_user.is_admin:
+            flash('Доступ запрещен. Требуются права администратора.', 'danger')
+            return redirect(url_for('index'))
+
+        user = User.query.get_or_404(user_id)
+
+        # Нельзя снять права админа с самого себя
+        if user.id == current_user.id:
+            flash('Нельзя изменить свои собственные права администратора', 'warning')
+            return redirect(url_for('admin_users'))
+
+        user.is_admin = not user.is_admin
+        db.session.commit()
+
+        action = "назначен админом" if user.is_admin else "снят с админа"
+        flash(f'Пользователь {user.username} {action}', 'success')
+        return redirect(url_for('admin_users'))
+
+    # ===== ОБНОВИ СУЩЕСТВУЮЩИЕ АДМИН-РОУТЫ =====
+
+
+    @app.route('/admin/user/<int:user_id>/delete', methods=['POST'])
+    @login_required
+    def delete_user(user_id):
+        """Удаление пользователя (только для админа)"""
+        if not current_user.is_admin:
+            flash('Доступ запрещен. Требуются права администратора.', 'danger')
+            return redirect(url_for('index'))
+
+        user = User.query.get_or_404(user_id)
+
+        # Нельзя удалить самого себя
+        if user.id == current_user.id:
+            flash('Нельзя удалить свой собственный аккаунт', 'warning')
+            return redirect(url_for('admin_users'))
+
+        # Нельзя удалить других админов (кроме себя)
+        if user.is_admin:
+            flash('Нельзя удалить другого администратора', 'warning')
+            return redirect(url_for('admin_users'))
+
+        # Удаляем все заметки пользователя
+        Note.query.filter_by(user_id=user_id).delete()
+
+        # Удаляем самого пользователя
+        db.session.delete(user)
+        db.session.commit()
+
+        flash(f'Пользователь {user.username} удален.', 'success')
+        return redirect(url_for('admin_users'))
+
