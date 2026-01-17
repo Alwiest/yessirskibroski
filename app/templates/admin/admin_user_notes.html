@@ -40,14 +40,14 @@
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center bg-light">
             <div>
-                <h4 class="mb-0">📝 Заметки пользователя: <strong>{{ user.username }}</strong></h4>
+                <h4 class="mb-0">Заметки пользователя: <strong>{{ user.username }}</strong></h4>
                 <p class="mb-0 text-muted">Email: {{ user.email }} | ID: {{ user.id }}</p>
             </div>
             <div class="text-end">
                 {% if user.is_admin %}
-                <span class="badge bg-danger fs-6">👑 Администратор</span>
+                <span class="badge bg-danger fs-6">Администратор</span>
                 {% else %}
-                <span class="badge bg-secondary fs-6">👤 Пользователь</span>
+                <span class="badge bg-secondary fs-6">Пользователь</span>
                 {% endif %}
                 <div class="mt-1">
                     <span class="badge bg-primary fs-6">{{ notes_count }} заметок</span>
@@ -60,7 +60,7 @@
                 <div class="col-md-6">
                     <div class="card">
                         <div class="card-body">
-                            <h5 class="card-title">📋 Информация о пользователе</h5>
+                            <h5 class="card-title">Информация о пользователе</h5>
                             <ul class="list-unstyled">
                                 <li><strong>Имя пользователя:</strong> {{ user.username }}</li>
                                 <li><strong>Email:</strong> {{ user.email }}</li>
@@ -75,7 +75,7 @@
                                       onsubmit="return confirm('Назначить пользователя {{ user.username }} администратором?');"
                                       class="d-inline">
                                     <button type="submit" class="btn btn-sm btn-outline-warning">
-                                        👑 Сделать админом
+                                        Сделать админом
                                     </button>
                                 </form>
                                 {% else %}
@@ -83,7 +83,7 @@
                                       onsubmit="return confirm('Снять пользователя {{ user.username }} с администратора?');"
                                       class="d-inline">
                                     <button type="submit" class="btn btn-sm btn-outline-secondary">
-                                        👤 Снять с админа
+                                        Снять с админа
                                     </button>
                                 </form>
                                 {% endif %}
@@ -125,20 +125,20 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <a href="{{ url_for('view_note', note_id=note.id) }}"
                                    class="btn btn-sm btn-outline-primary" target="_blank">
-                                    👁️ Просмотреть
+                                    Просмотреть
                                 </a>
 
                                 <div class="btn-group">
                                     <a href="{{ url_for('edit_note', note_id=note.id) }}"
                                        class="btn btn-sm btn-outline-warning" target="_blank">
-                                        ✏️ Редактировать
+                                        Редактировать
                                     </a>
 
                                     <button type="button"
                                             class="btn btn-sm btn-outline-danger"
                                             data-bs-toggle="modal"
                                             data-bs-target="#deleteNoteModal{{ note.id }}">
-                                        🗑️ Удалить
+                                        Удалить
                                     </button>
                                 </div>
                             </div>
@@ -156,7 +156,7 @@
                             </div>
                             <div class="modal-body">
                                 <div class="alert alert-danger">
-                                    <h6>⚠️ Вы уверены что хотите удалить заметку?</h6>
+                                    <h6>Вы уверены что хотите удалить заметку?</h6>
                                     <p><strong>{{ note.title }}</strong></p>
                                     <p>Автор: {{ user.username }}</p>
                                     <p>Создана: {{ note.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
@@ -176,7 +176,7 @@
             </div>
             {% else %}
             <div class="alert alert-info">
-                <h5>📭 Заметок нет</h5>
+                <h5>Заметок нет</h5>
                 <p class="mb-0">У пользователя <strong>{{ user.username }}</strong> пока нет созданных заметок.</p>
             </div>
             {% endif %}
@@ -186,10 +186,10 @@
             <div class="d-flex justify-content-between">
                 <div>
                     <a href="/admin/all-notes" class="btn btn-secondary">← Все заметки</a>
-                    <a href="/admin/users" class="btn btn-primary">👥 К пользователям</a>
+                    <a href="/admin/users" class="btn btn-primary">К пользователям</a>
                 </div>
                 <div>
-                    <a href="/" class="btn btn-outline-secondary">🏠 На главную</a>
+                    <a href="/" class="btn btn-outline-secondary">На главную</a>
                 </div>
             </div>
         </div>
